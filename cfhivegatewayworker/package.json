@@ -17,6 +17,7 @@
     "wrangler": "^3.60.3"
   },
   "dependencies": {
-    "@graphql-hive/gateway": "^1.4.12"
+    "@graphql-hive/gateway": "^1.4.12",
+    "@graphql-mesh/cache-cfw-kv": "^0.103.0-alpha-20241118193047-b7a9297d03984f0836d4739b1facd85a05830aa9"
   }
 }
