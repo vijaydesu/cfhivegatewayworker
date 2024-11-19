@@ -11,7 +11,7 @@
  * Learn more at https://developers.cloudflare.com/workers/
  * https://the-guild.dev/graphql/hive/docs/gateway/other-features/header-propagation
  * https://the-guild.dev/graphql/hive/docs/api-reference/gateway-config
- * 
+ *
  */
 
 /*export default {
@@ -20,62 +20,52 @@
 	},
 } satisfies ExportedHandler<Env>;*/
 
-import { createGatewayRuntime, createOtlpHttpExporter, createStdoutExporter } from '@graphql-hive/gateway'
-import http from '@graphql-mesh/transport-http'
-import { LogLevel } from '@graphql-mesh/utils';
-import { KeyValueCache } from '@graphql-mesh/types'
-import Logger from './CustomLogger';
-import { useOpenTelemetry } from "@graphql-hive/gateway";
+import { createGatewayRuntime } from "@graphql-hive/gateway-runtime";
+import http from "@graphql-mesh/transport-http";
+import Logger from "./CustomLogger";
+// import { useOpenTelemetry } from "@graphql-hive/gateway";
 import CloudflareKVCacheStorage from "@graphql-mesh/cache-cfw-kv";
-import CFWorkerKVCache from './CFKVCache'
-
-
 
 export default {
-	
+  async fetch(request: any, env: any, ctx: any) {
+    //console.log("Global KV Namespace : "+globalThis.HiveGateway);
+    const logger = new Logger();
+    const gateway = createGatewayRuntime({
+      // All options available in `gateway.config.ts` configuration can also be passed here.
+      supergraph: {
+        // The CDN type.
+        type: "hive",
+        // The endpoint of CDN
+        endpoint:
+          "https://cdn.graphql-hive.com/artifacts/v1/e41e9e21-6705-4502-b0e4-1d04dbf6da43/supergraph",
+        // The API key provided by Hive Registry
+        key: "hv2ZGYyYmQxNGEtOTNlNS00ZjIwLTk3ZWYtZmU3OWVkMDdlNzFjOmM1Zjc5YjBjMjA4NGE4MzY5MDcyMTEzOWE4NjAxYjFiMzRkNjYyN2I=",
+      },
+      //supergraph,
+      transports: {
+        http, // http transport is required for subgraphs using standard GraphQL over HTTP.
+      },
+      landingPage: true,
+      transportEntries: {
+        "*": {
+          headers: [
+            ["client_id", "{context.header.client_id}"],
+            ["client_secret", "{context.header.correalation-id}"],
+          ],
+        },
+      },
+      propagateHeaders: {
+        fromClientToSubgraphs({ request, subgraphName }) {
+          return {
+            client_id: request.headers.get("client_id"),
+            client_secret: request.headers.get("client_secret"),
+          };
+        },
+      },
+      healthCheckEndpoint: "/healthcheck",
+      readinessCheckEndpoint: "/readiness",
 
-	async fetch(request: any, env: any, ctx: any) {
-		//console.log("Global KV Namespace : "+globalThis.HiveGateway);
-		const logger=new Logger();
-		const gateway = createGatewayRuntime(
-
-			{
-				// All options available in `gateway.config.ts` configuration can also be passed here.
-				supergraph: {
-					// The CDN type.
-					type: 'hive',
-					// The endpoint of CDN
-					endpoint: 'https://cdn.graphql-hive.com/artifacts/v1/e41e9e21-6705-4502-b0e4-1d04dbf6da43/supergraph',
-					// The API key provided by Hive Registry
-					key: 'hv2ZGYyYmQxNGEtOTNlNS00ZjIwLTk3ZWYtZmU3OWVkMDdlNzFjOmM1Zjc5YjBjMjA4NGE4MzY5MDcyMTEzOWE4NjAxYjFiMzRkNjYyN2I='
-				},
-				//supergraph,
-				transports: {
-					http // http transport is required for subgraphs using standard GraphQL over HTTP.
-				},
-				landingPage: true,
-				transportEntries: {
-					'*': {
-						headers: [
-							['client_id', '{context.header.client_id}'],
-							['client_secret', '{context.header.correalation-id}']
-						]
-					}
-				},
-				propagateHeaders: {
-					fromClientToSubgraphs({ request, subgraphName }) {
-
-						return {
-							'client_id': request.headers.get('client_id'),
-							'client_secret': request.headers.get('client_secret')
-						}
-
-					}
-				},
-				healthCheckEndpoint: '/healthcheck',
-				readinessCheckEndpoint: '/readiness',
-
-				/* plugins(ctx) {
+      /* plugins(ctx) {
 					return [
 					  useOpenTelemetry({
 						logger: ctx.logger,
@@ -105,7 +95,7 @@ export default {
 					];
 				  }, */
 
-				/* OpenTelemetry: {
+      /* OpenTelemetry: {
 					exporters: [
 						createOtlpHttpExporter({
 							url: 'https://otlp.nr-data.net:4318',
@@ -136,36 +126,24 @@ export default {
 					}
 				}, */
 
-				//logging: LogLevel.info
-				logging: logger,
-				cache: new CloudflareKVCacheStorage({
-					logger,
-					namespace: env.HiveGateway,
-				  }), 
-				  /*cache: new CFWorkerKVCache({
+      //logging: LogLevel.info
+      logging: logger,
+      cache: new CloudflareKVCacheStorage({
+        logger,
+        namespace: env.HiveGateway,
+      }),
+      /*cache: new CFWorkerKVCache({
 					logger,
 					namespace: env.HiveGateway,
 				  }),*/
-				  responseCaching: {
-					// global cache
-					session: () => null
-				  }
+      responseCaching: {
+        // global cache
+        session: () => null,
+      },
 
-				//graphqlEndpoint : "/graphQLi"
-
-				/*cache: {
-					type : 'cfw-kv',
-					namespace: 'HiveGateway' // The namespace of the KV
-				   
-				 }, 
-				 responseCaching: {
-				   session: () => null
-				 }*/
-
-
-			}
-		);
-
-		return await gateway(request, env, ctx);
-	}
-}
+     
+    });
+    ctx.waitUntil(gateway[Symbol.asyncDispose]());
+    return await gateway(request, env, ctx);
+  },
+};

@@ -14,10 +14,11 @@
     "@cloudflare/workers-types": "^4.20241112.0",
     "typescript": "^5.5.2",
     "vitest": "2.0.5",
-    "wrangler": "^3.60.3"
+    "wrangler": "^3.88.0"
   },
   "dependencies": {
     "@graphql-hive/gateway": "^1.4.12",
+    "@graphql-hive/gateway-runtime": "^1.1.7",
     "@graphql-mesh/cache-cfw-kv": "^0.103.0-alpha-20241118193047-b7a9297d03984f0836d4739b1facd85a05830aa9"
   }
 }
