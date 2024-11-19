@@ -27,6 +27,7 @@ import { KeyValueCache } from '@graphql-mesh/types'
 import Logger from './CustomLogger';
 import { useOpenTelemetry } from "@graphql-hive/gateway";
 import CloudflareKVCacheStorage from "@graphql-mesh/cache-cfw-kv";
+import CFWorkerKVCache from './CFKVCache'
 
 
 
@@ -140,7 +141,11 @@ export default {
 				cache: new CloudflareKVCacheStorage({
 					logger,
 					namespace: env.HiveGateway,
-				  }),
+				  }), 
+				  /*cache: new CFWorkerKVCache({
+					logger,
+					namespace: env.HiveGateway,
+				  }),*/
 				  responseCaching: {
 					// global cache
 					session: () => null
