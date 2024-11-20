@@ -20,19 +20,23 @@
 	},
 } satisfies ExportedHandler<Env>;*/
 
-import { createGatewayRuntime, createOtlpHttpExporter, CloudflareKVCacheStorage, createStdoutExporter } from '@graphql-hive/gateway'
+import { createGatewayRuntime, createOtlpHttpExporter, createStdoutExporter } from '@graphql-hive/gateway'
 import http from '@graphql-mesh/transport-http'
 import { LogLevel } from '@graphql-mesh/utils';
 import { KeyValueCache } from '@graphql-mesh/types'
 import Logger from './CustomLogger';
 import { useOpenTelemetry } from "@graphql-hive/gateway";
+import CloudflareKVCacheStorage from "@graphql-mesh/cache-cfw-kv";
+import CFWorkerKVCache from './CFKVCache'
 
 
 
 export default {
+	
+
 	async fetch(request: any, env: any, ctx: any) {
-
-
+		//console.log("Global KV Namespace : "+globalThis.HiveGateway);
+		const logger=new Logger();
 		const gateway = createGatewayRuntime(
 
 			{
@@ -133,7 +137,19 @@ export default {
 				}, */
 
 				//logging: LogLevel.info
-				logging: new Logger()
+				logging: logger,
+				cache: new CloudflareKVCacheStorage({
+					logger,
+					namespace: env.HiveGateway,
+				  }), 
+				  /*cache: new CFWorkerKVCache({
+					logger,
+					namespace: env.HiveGateway,
+				  }),*/
+				  responseCaching: {
+					// global cache
+					session: () => null
+				  }
 
 				//graphqlEndpoint : "/graphQLi"
 
